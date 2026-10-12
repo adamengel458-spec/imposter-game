@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>אימפוסטר</title>
+<!-- הגדרות למסך הבית באייפון -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="אימפוסטר">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<style>
+  /* ===== צבעי מערכת של iOS ===== */
+  :root {
+    --blue: #007AFF;
+    --red: #FF3B30;
+    --green: #34C759;
+    --indigo: #5856D6;
+    --bg: #F2F2F7;                         /* systemGroupedBackground */
+    --card: #FFFFFF;                       /* secondarySystemGroupedBackground */
+    --label: #000000;
+    --label-2: rgba(60, 60, 67, 0.6);      /* secondaryLabel */
+    --label-3: rgba(60, 60, 67, 0.3);      /* tertiaryLabel */
+    --separator: rgba(60, 60, 67, 0.29);
+    --fill: rgba(118, 118, 128, 0.12);     /* tertiarySystemFill */
+    --fill-2: rgba(120, 120, 128, 0.16);   /* מתג כבוי */
+    --red-tint: rgba(255, 59, 48, 0.1);
+    --blue-tint: rgba(0, 122, 255, 0.1);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --blue: #0A84FF;
+      --red: #FF453A;
+      --green: #30D158;
+      --indigo: #5E5CE6;
+      --bg: #000000;
+      --card: #1C1C1E;
+      --label: #FFFFFF;
+      --label-2: rgba(235, 235, 245, 0.6);
+      --label-3: rgba(235, 235, 245, 0.3);
+      --separator: rgba(84, 84, 88, 0.65);
+      --fill: rgba(118, 118, 128, 0.24);
+      --fill-2: rgba(120, 120, 128, 0.32);
+      --red-tint: rgba(255, 69, 58, 0.16);
+      --blue-tint: rgba(10, 132, 255, 0.18);
+      --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --blue: #0A84FF;
+    --red: #FF453A;
+    --green: #30D158;
+    --indigo: #5E5CE6;
+    --bg: #000000;
+    --card: #1C1C1E;
+    --label: #FFFFFF;
+    --label-2: rgba(235, 235, 245, 0.6);
+    --label-3: rgba(235, 235, 245, 0.3);
+    --separator: rgba(84, 84, 88, 0.65);
+    --fill: rgba(118, 118, 128, 0.24);
+    --fill-2: rgba(120, 120, 128, 0.32);
+    --red-tint: rgba(255, 69, 58, 0.16);
+    --blue-tint: rgba(10, 132, 255, 0.18);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+
+  /* ===== בסיס: פונט המערכת של אפל (SF) ===== */
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--label);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;          /* Body */
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: -0.2px;
+    min-height: 100dvh;
+    touch-action: manipulation;
+    -webkit-font-smoothing: antialiased;
+    transition: background .3s, color .3s;
+  }
+  button, input { font: inherit; color: inherit; letter-spacing: inherit; }
+  button { cursor: pointer; }
+
+  .app {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 20px);
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== כותרת גדולה (Large Title) ===== */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 4px 18px;
+  }
+  .logo {
+    margin: 0;
+    font-size: 34px; font-weight: 700; letter-spacing: 0.3px; line-height: 1.2;
+  }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: none; background: var(--fill);
+    font-size: 17px; display: grid; place-items: center;
+  }
+  .icon-btn:active { opacity: .5; }
+
+  /* ===== מסכים ===== */
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; animation: fadeIn .3s ease both; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pop {
+    0% { transform: scale(.92); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ===== רשימות מקובצות (Inset Grouped) ===== */
+  .section-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 16px 7px;
+    font-size: 13px; font-weight: 400; color: var(--label-2);
+  }
+  .section-foot {
+    padding: 7px 16px 0;
+    font-size: 13px; color: var(--label-2);
+  }
+  .group {
+    background: var(--card);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .section { margin-bottom: 30px; }
+  .row {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 44px; padding: 6px 16px;
+    position: relative;
+  }
+  /* קו מפריד שמתחיל אחרי האייקון, כמו ב-iOS */
+  .row + .row::before, .players .player-row + .player-row::before, .chip + .chip::before, .reveal-item + .reveal-item::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 16px;
+    height: 0.5px; background: var(--separator);
+  }
+  .row-title { flex: 1; }
+  .link-btn {
+    border: none; background: none; padding: 0;
+    color: var(--blue); font-size: 15px; font-weight: 400;
+  }
+  .link-btn:active { opacity: .4; }
+
+  /* ===== Stepper ===== */
+  .stepper {
+    display: flex; align-items: center;
+    background: var(--fill); border-radius: 8px; overflow: hidden;
+  }
+  .stepper button {
+    width: 46px; height: 32px; border: none; background: none;
+    font-size: 20px; font-weight: 400; color: var(--label);
+  }
+  .stepper button:active { background: var(--fill-2); }
+  .stepper button:disabled { color: var(--label-3); }
+  .stepper .divider { width: 0.5px; height: 18px; background: var(--separator); }
+  .count-label { color: var(--label-2); font-variant-numeric: tabular-nums; }
+
+  /* ===== שמות שחקנים ===== */
+  .players { display: block; }
+  .player-row {
+    display: flex; align-items: center; gap: 12px;
+    min-height: 44px; padding: 0 16px; position: relative;
+  }
+  .player-row + .player-row::before { right: 60px; }
+  .player-num {
+    flex: none; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--blue); color: #fff;
+    display: grid; place-items: center;
+    font-size: 15px; font-weight: 600;
+  }
+  .text-input {
+    flex: 1; width: 100%;
+    border: none; background: none; outline: none;
+    padding: 11px 0;
+    font-size: 17px; /* 16px ומעלה מונע זום אוטומטי באייפון */
+  }
+  .text-input::placeholder { color: var(--label-3); }
+  .text-input.invalid { color: var(--red); }
+  .text-input.invalid::placeholder { color: var(--red); }
+
+  /* ===== קטגוריות כרשימה עם סימון V ===== */
+  .chips { display: block; }
+  .chip {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; min-height: 44px; padding: 0 16px;
+    border: none; background: none; text-align: right;
+    font-size: 17px; font-weight: 400; position: relative;
+  }
+  .chip:active { background: var(--fill); }
+  .chip + .chip::before { right: 16px; }
+  .chip::after {
+    content: ""; margin-right: auto;
+    width: 8px; height: 14px;
+    border: solid var(--blue); border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg) translate(-2px, -2px);
+    opacity: 0; transition: opacity .15s;
+  }
+  .chip[aria-pressed="true"]::after { opacity: 1; }
+
+  /* ===== מתג iOS ===== */
+  .switch { position: relative; flex: none; width: 51px; height: 31px; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch .slider {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--fill-2); transition: background .25s;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; top: 2px; right: 2px;
+    width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16);
+    transition: transform .25s cubic-bezier(.3, .7, .4, 1);
+  }
+  .switch input:checked + .slider { background: var(--green); }
+  .switch input:checked + .slider::before { transform: translateX(-20px); }
+  .switch input:focus-visible + .slider { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  /* ===== כפתורים ===== */
+  .btn {
+    width: 100%; min-height: 50px;
+    border: none; border-radius: 14px;
+    padding: 14px 20px;
+    font-size: 17px; font-weight: 600; /* Headline */
+    transition: opacity .15s;
+  }
+  .btn:active { opacity: .7; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-secondary { background: var(--fill); color: var(--blue); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-stack { display: grid; gap: 10px; margin-top: auto; padding-top: 16px; }
+
+  .error-box {
+    display: none;
+    background: var(--red-tint); color: var(--red);
+    border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;
+    font-size: 15px; font-weight: 500;
+  }
+  .error-box.show { display: block; animation: pop .25s ease both; }
+
+  /* ===== מסכי משחק במרכז ===== */
+  .center {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; gap: 6px;
+    padding: 20px 0;
+  }
+  .big-emoji { font-size: 64px; line-height: 1; margin-bottom: 10px; animation: pop .35s ease both; }
+  .eyebrow { color: var(--label-2); font-size: 17px; font-weight: 400; margin: 0; }
+  .headline { font-size: 34px; font-weight: 700; margin: 0; line-height: 1.2; word-break: break-word; }
+  .progress {
+    color: var(--label-2); font-size: 13px; font-weight: 600;
+    background: var(--fill); border-radius: 999px; padding: 4px 12px; margin-bottom: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .hint-text { color: var(--label-2); font-size: 15px; margin: 10px 0 0; }
+
+  /* ===== קלף הפוך ===== */
+  .flip {
+    width: 100%; perspective: 1200px; cursor: pointer; outline: none;
+    user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; /* בלי תפריט "העתק" באייפון בלחיצה ארוכה */
+    touch-action: none;
+  }
+  .flip-inner {
+    position: relative; width: 100%; min-height: 360px;
+    transition: transform .55s cubic-bezier(.3, .7, .4, 1);
+    transform-style: preserve-3d;
+  }
+  .flip.flipped .flip-inner { transform: rotateY(180deg); }
+  .flip.no-anim .flip-inner { transition: none; }
+  .flip-face {
+    position: absolute; inset: 0;
+    border-radius: 22px;
+    -webkit-backface-visibility: hidden; backface-visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+  /* צד הקלף הסגור: זהה אצל כולם */
+  .flip-front {
+    background: linear-gradient(160deg, var(--blue), var(--indigo));
+    color: rgba(255, 255, 255, .95);
+    font-size: 96px; font-weight: 700;
+  }
+  .flip-front::after {
+    content: ""; position: absolute; inset: 12px;
+    border: 1.5px solid rgba(255, 255, 255, .25); border-radius: 14px;
+  }
+  .flip-back { transform: rotateY(180deg); background: var(--card); }
+  .role-sub { color: var(--label-2); margin: 0; font-size: 15px; }
+  .role-word {
+    font-size: 40px; font-weight: 700; margin: 8px 0;
+    color: var(--blue); word-break: break-word; letter-spacing: 0;
+  }
+  .flip-back.imposter .role-word { color: var(--red); }
+  .hint-pill {
+    display: inline-block; margin-top: 18px;
+    background: var(--fill); color: var(--label);
+    border-radius: 12px; padding: 10px 18px;
+    font-size: 20px; font-weight: 600;
+  }
+  .hint-pill small { display: block; color: var(--label-2); font-size: 12px; font-weight: 400; margin-bottom: 2px; }
+
+  /* ===== מסך חשיפה ===== */
+  .reveal-list {
+    width: 100%; margin-top: 22px;
+    background: var(--card); border-radius: 10px; overflow: hidden;
+  }
+  .reveal-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    min-height: 44px; padding: 11px 16px; position: relative;
+  }
+  .reveal-item span { color: var(--label); }
+  .reveal-item strong { color: var(--label-2); font-weight: 400; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== מסך 1: הגדרות ===== -->
+  <section class="screen active" id="screen-setup">
+    <header class="topbar">
+      <h1 class="logo">אימפוסטר</h1>
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="החלפת מצב כהה/בהיר">🌙</button>
+    </header>
+
+    <div class="section">
+      <div class="section-head">שחקנים</div>
+      <div class="group">
+        <div class="row">
+          <span class="row-title">מספר שחקנים <span class="count-label" id="player-count">4</span></span>
+          <div class="stepper">
+            <button type="button" id="minus-btn" aria-label="פחות שחקנים">−</button>
+            <span class="divider"></span>
+            <button type="button" id="plus-btn" aria-label="יותר שחקנים">+</button>
+          </div>
+        </div>
+        <div class="row" style="padding:0;display:block">
+          <div class="players" id="players-list"></div>
+        </div>
+      </div>
+      <div class="section-foot">שם שלא ימולא יוצג כ"שחקן 1", "שחקן 2" וכו'.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>קטגוריות</span>
+        <button type="button" class="link-btn" id="select-all-btn">בחר הכל</button>
+      </div>
+      <div class="group">
+        <div class="chips" id="chips"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">אפשרויות</div>
+      <div class="group">
+        <div class="row">
+          <span class="row-title">תן לאימפוסטר רמז</span>
+          <label class="switch">
+            <input type="checkbox" id="hint-toggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="section-foot">האימפוסטר יקבל רמז עקיף שיעזור לו להשתלב.</div>
+    </div>
+
+    <div class="error-box" id="error-box" role="alert"></div>
+    <button type="button" class="btn btn-primary" id="start-btn">התחל משחק</button>
+  </section>
+
+  <!-- ===== מסך 2א: העברת המכשיר ===== -->
+  <section class="screen" id="screen-pass">
+    <div class="center">
+      <div class="progress" id="pass-progress"></div>
+      <div class="big-emoji">📱</div>
+      <p class="eyebrow">העבר את המכשיר אל</p>
+      <p class="headline" id="pass-name"></p>
+      <p class="hint-text">ודאו שאף אחד אחר לא מסתכל על המסך</p>
+    </div>
+    <div class="btn-stack">
+      <button type="button" class="btn btn-primary" id="reveal-btn"></button>
+    </div>
+  </section>
+
+  <!-- ===== מסך 2ב: חשיפת תפקיד ===== -->
+  <section class="screen" id="screen-role">
+    <div class="center">
+      <div class="flip" id="flip-card" role="button" tabindex="0" aria-label="הפוך את הקלף">
+        <div class="flip-inner">
+          <div class="flip-face flip-front" aria-hidden="true"><span>?</span></div>
+          <div class="flip-face flip-back" id="role-content"></div>
+        </div>
+      </div>
+      <p class="hint-text" id="flip-tip">החזיקו את האצבע על הקלף כדי לראות</p>
+    </div>
+    <div class="btn-stack">
+      <button type="button" class="btn btn-primary" id="hide-btn" style="visibility:hidden">הסתר והעבר הלאה</button>
+    </div>
+  </section>
+
+  <!-- ===== מסך 3: המשחק מתנהל ===== -->
+  <section class="screen" id="screen-playing">
+    <div class="center">
+      <div class="big-emoji">🎤</div>
+      <p class="eyebrow">כולם קיבלו תפקיד</p>
+      <p class="headline" id="starter-name"></p>
+    </div>
+    <div class="btn-stack">
+      <button type="button" class="btn btn-danger" id="end-btn">סיים משחק</button>
+    </div>
+  </section>
+
+  <!-- ===== מסך 4: חשיפה ===== -->
+  <section class="screen" id="screen-end">
+    <div class="center">
+      <div class="big-emoji">🕵️</div>
+      <p class="eyebrow">האימפוסטר היה</p>
+      <p class="headline" id="imposter-name"></p>
+      <div class="reveal-list">
+        <div class="reveal-item"><span>המילה הסודית</span><strong id="end-word"></strong></div>
+        <div class="reveal-item" id="end-hint-row"><span>הרמז של האימפוסטר</span><strong id="end-hint"></strong></div>
+      </div>
+    </div>
+    <div class="btn-stack">
+      <button type="button" class="btn btn-primary" id="new-game-btn">המשך משחק</button>
+      <button type="button" class="btn btn-secondary" id="settings-btn">מסך הבית</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+'use strict';
+
+/* =========================================================
+   מאגר מילים ורמזים
+   כל פריט: [מילה, רמז]. הרמז מוצג רק לאימפוסטר, ומטרתו
+   להישמע כמו רמז חכם של מי שבאמת מכיר את המילה.
+   ========================================================= */
+const CATEGORY_DATA = [
+  { id: 'animals', name: 'בעלי חיים', emoji: '🦁', words: [
+    ['כלב', 'עצם'], ['חתול', 'שבע נשמות'], ['פיל', 'דמבו'], ['אריה', 'מלך'],
+    ['ג\'ירפה', 'צמרות'], ['זברה', 'מעבר חצייה'], ['קוף', 'טרזן'], ['דולפין', 'אילת'],
+    ['כריש', 'סנפיר'], ['נחש', 'תפוח'], ['תנין', 'דמעות'], ['ינשוף', 'הדוויג'],
+    ['פינגווין', 'מדגסקר'], ['דוב', 'דבש'], ['סוס', 'פרסה'], ['חמור', 'שרק'],
+    ['גמל', 'דבשת'], ['ארנב', 'כובע של קוסם'], ['צב', 'נינג\'ה'], ['עכביש', 'שמונה'],
+    ['דבורה', 'עוקץ'], ['נמלה', 'פירורים'], ['פרפר', 'זחל'], ['תרנגול', 'שעון מעורר'],
+    ['ברווז', 'אמבטיה'], ['עטלף', 'באטמן'], ['זאב', 'כיפה אדומה'], ['שועל', 'ערמומי'],
+    ['קיפוד', 'סוניק'], ['סנאי', 'עידן הקרח'], ['לוויתן', 'יונה הנביא'], ['תמנון', 'דיו'],
+    ['קנגורו', 'כיס'], ['פנדה', 'במבוק'], ['כבשה', 'לספור לפני השינה'], ['חזיר', 'קופת חיסכון'],
+    ['תוכי', 'פיראט'], ['פרה', 'הודו'], ['אוגר', 'גלגל'], ['דג זהב', 'שלוש משאלות'],
+    ['תולעת', 'ספרים'], ['עקרב', 'מזל'], ['יען', 'ראש בחול']
+  ]},
+  { id: 'food', name: 'אוכל', emoji: '🍕', words: [
+    ['פיצה', 'משולש'], ['פלאפל', 'כדורים'], ['שוקולד', 'צ\'רלי'], ['סושי', 'מקלות'],
+    ['המבורגר', 'קומבו'], ['ספגטי', 'כדורי בשר'], ['חומוס', 'לנגב'], ['שקשוקה', 'מחבת'],
+    ['גלידה', 'גביע'], ['עוגה', 'נרות'], ['במבה', 'תינוק'], ['ביצה', 'מה בא קודם'],
+    ['בננה', 'קליפה'], ['תפוח', 'ניוטון'], ['לימון', 'חמוץ'], ['אבטיח', 'גרעינים'],
+    ['פופקורן', 'קולנוע'], ['מרק', 'סבתא'], ['שווארמה', 'לאפה'], ['בורקס', 'ביצה קשה'],
+    ['חלה', 'צמה'], ['סלט', 'קיצוץ'], ['קפה', 'שחור'], ['צ\'יפס', 'קטשופ'],
+    ['פנקייק', 'סירופ'], ['סופגנייה', 'ריבה'], ['תירס', 'חוף ים'], ['אורז', 'סיר'],
+    ['מלפפון', 'ספא'], ['עגבנייה', 'פרי או ירק'], ['בצל', 'שכבות'], ['שום', 'ערפדים'],
+    ['דבש', 'ראש השנה'], ['פסטה', 'בולונז'], ['טוסט', 'גבינה צהובה'], ['נקניקייה', 'מסטרד'],
+    ['שניצל', 'פירורי לחם'], ['גבינה', 'עכבר'], ['לחם', 'פרוסה'], ['קוסקוס', 'יום שישי'],
+    ['פיתה', 'כיס'], ['ביסלי', 'גריל'], ['קרמבו', 'חורף']
+  ]},
+  { id: 'movies', name: 'סרטים וסדרות', emoji: '🎬', words: [
+    ['טיטאניק', 'קרחון'], ['הארי פוטר', 'צלקת'], ['מלחמת הכוכבים', 'אני אבא שלך'], ['שר הטבעות', 'הר געש'],
+    ['מלך האריות', 'האקונה מטטה'], ['פרוזן', 'לשחרר'], ['שרק', 'בצל'], ['ספיידרמן', 'עקיצה'],
+    ['באטמן', 'ג\'וקר'], ['מטריקס', 'כדור אדום'], ['צעצוע של סיפור', 'אינסוף'], ['מוצאים את נמו', 'דורי'],
+    ['פארק היורה', 'יתוש'], ['שובר שורות', 'מורה לכימיה'], ['משחקי הכס', 'החורף מגיע'], ['חברים', 'בית קפה'],
+    ['הסימפסונים', 'צהוב'], ['בובספוג', 'אננס'], ['פאודה', 'מסתערבים'], ['הכוכב הבא', 'אירוויזיון'],
+    ['האח הגדול', 'מצלמות'], ['קופה ראשית', 'סופר'], ['משחק הדיונון', 'אור אדום'], ['דברים מוזרים', 'וופל'],
+    ['ג\'יימס בונד', 'מרטיני'], ['אווטאר', 'כחול'], ['רוקי', 'מדרגות'], ['שודדי הקאריביים', 'מצפן'],
+    ['בחזרה לעתיד', 'מכונת זמן'], ['אלאדין', 'שטיח'], ['סינדרלה', 'חצות'], ['שלגייה', 'מראה'],
+    ['פינוקיו', 'אף'], ['היפה והחיה', 'ורד'], ['וונסדיי', 'יד'], ['מיניונים', 'בננה'],
+    ['הנוקמים', 'כפפה'], ['מואנה', 'אוקיינוס'], ['מפלצות בע"מ', 'צרחות'], ['למעלה', 'בלונים'],
+    ['קוקו', 'גיטרה'], ['הקול בראש', 'רגשות']
+  ]},
+  { id: 'geo', name: 'מקומות', emoji: '🌍', words: [
+    ['ארצות הברית', 'חמישים'], ['צרפת', 'בגט'], ['איטליה', 'מגף'], ['יפן', 'אנימה'],
+    ['ברזיל', 'קרנבל'], ['מצרים', 'עשר מכות'], ['הולנד', 'אופניים'], ['שוויץ', 'שעונים'],
+    ['רוסיה', 'בובות'], ['אוסטרליה', 'בומרנג'], ['קנדה', 'מייפל'], ['מקסיקו', 'טאקו'],
+    ['הודו', 'בוליווד'], ['סין', 'חומה'], ['יוון', 'זאוס'], ['ספרד', 'שוורים'],
+    ['אנגליה', 'תה'], ['גרמניה', 'מרצדס'], ['אילת', 'מע"מ'], ['ירושלים', 'בירה'],
+    ['תל אביב', 'עזריאלי'], ['חיפה', 'כרמל'], ['ים המלח', 'לצוף'], ['פריז', 'לובר'],
+    ['לונדון', 'אוטובוס אדום'], ['ניו יורק', 'מוניות צהובות'], ['ונציה', 'גונדולה'], ['רומא', 'גלדיאטורים'],
+    ['אנטארקטיקה', 'פינגווינים'], ['אמזונס', 'משלוחים'], ['האוורסט', 'פסגה'], ['סהרה', 'חולות'],
+    ['אירלנד', 'תלתן'], ['ארגנטינה', 'מסי'], ['קובה', 'סיגר'], ['ג\'מייקה', 'בולט'],
+    ['הוואי', 'גלישה'], ['דובאי', 'המגדל הכי גבוה'], ['טבריה', 'כנרת'], ['נתניה', 'צרפתים'],
+    ['באר שבע', 'בן גוריון'], ['אפריקה', 'ספארי'], ['פורטוגל', 'רונאלדו'], ['תאילנד', 'טיול אחרי צבא'],
+    ['קפריסין', 'חתונה אזרחית']
+  ]},
+  { id: 'jobs', name: 'מקצועות', emoji: '👩‍⚕️', words: [
+    ['רופא', 'כתב יד'], ['שוטר', 'דונאטס'], ['מורה', 'צלצול'], ['טייס', 'ג\'ט לג'],
+    ['שף', 'כובע לבן'], ['כבאי', 'חתול על עץ'], ['מעצב שיער', 'מראה'], ['עורך דין', 'חליפה'],
+    ['שופט', 'פטיש'], ['אסטרונאוט', 'ירח'], ['מלצר', 'טיפ'], ['צלם', 'חתונה'],
+    ['זמר', 'מקלחת'], ['שחקן', 'אוסקר'], ['רופא שיניים', 'סוכריות'], ['וטרינר', 'קולר'],
+    ['חקלאי', 'טרקטור'], ['דייג', 'סבלנות'], ['דוור', 'כלבים'], ['קוסם', 'ארנב'],
+    ['ליצן', 'אף אדום'], ['מתכנת', 'באג'], ['נהג מונית', 'פקקים'], ['בלש', 'שרלוק'],
+    ['מרגל', 'מוסד'], ['חייל', 'שמירה'], ['אחות', 'זריקה'], ['מציל', 'משרוקית'],
+    ['אופה', 'חמש בבוקר'], ['שרברב', 'מריו'], ['חשמלאי', 'קצר'], ['פסיכולוג', 'ספה'],
+    ['עיתונאי', 'ראיון'], ['שוער', 'כפפות'], ['ראש ממשלה', 'בחירות'], ['מאמן כושר', 'עוד אחת'],
+    ['יוטיובר', 'תעשו מנוי'], ['גנן', 'דשא'], ['קופאית', 'קבלה'], ['מדען', 'מעבדה'],
+    ['דיג\'יי', 'מסיבה'], ['נהג אוטובוס', 'רב-קו'], ['מאבטח', 'קניון']
+  ]},
+  { id: 'sports', name: 'ספורט ומשחקים', emoji: '⚽', words: [
+    ['כדורגל', 'נבדל'], ['כדורסל', 'שלשה'], ['טניס', 'ווימבלדון'], ['שחייה', 'כלור'],
+    ['אגרוף', 'זירה'], ['ריצה', 'מרתון'], ['שחמט', 'מלכה'], ['גולף', 'חור'],
+    ['כדורעף', 'רשת'], ['סקי', 'חרמון'], ['גלישה', 'כריש'], ['רכיבה על אופניים', 'קסדה'],
+    ['פינג פונג', 'מחבט'], ['באולינג', 'סטרייק'], ['ג\'ודו', 'חגורה שחורה'], ['התעמלות', 'גמישות'],
+    ['ביליארד', 'כדור שמונה'], ['הוקי', 'קרח'], ['מטקות', 'טוק טוק'], ['יוגה', 'מזרן'],
+    ['סקייטבורד', 'מעקה'], ['פורמולה 1', 'שמפניה'], ['קרטה', 'שבירת קרשים'], ['הרמת משקולות', 'חדר כושר'],
+    ['החלקה על הקרח', 'אולימפיאדת חורף'], ['שש-בש', 'סבא'], ['קפיצת בנג\'י', 'גשר'], ['טיפוס קירות', 'רתמה'],
+    ['צלילה', 'מסכה'], ['פארקור', 'גגות'], ['מחניים', 'שיעור ספורט'], ['מחבואים', 'לספור עד עשר'],
+    ['פיפא', 'פלייסטיישן'], ['פוקר', 'פרצוף'], ['טאקי', 'פלוס שתיים'], ['מונופול', 'כלא'],
+    ['רכיבה על סוסים', 'אוכף'], ['חץ וקשת', 'רובין הוד'], ['אולימפיאדה', 'חמש טבעות'], ['פיינטבול', 'כתמים']
+  ]},
+  { id: 'objects', name: 'חפצים', emoji: '🔑', words: [
+    ['מפתח', 'צרור'], ['שעון', 'מחוגים'], ['מטרייה', 'רוח'], ['מראה', 'סלפי'],
+    ['כרית', 'מלחמה'], ['משקפיים', 'ארבע עיניים'], ['מטאטא', 'מכשפה'], ['כיסא', 'מוזיקלי'],
+    ['נר', 'חנוכה'], ['טלפון', 'סוללה'], ['מחשב', 'מקלדת'], ['מצלמה', 'פלאש'],
+    ['מספריים', 'אבן נייר'], ['עט', 'מבחן'], ['מקרר', 'מגנטים'], ['מזוודה', 'שדה תעופה'],
+    ['שטיח', 'אדום'], ['כובע', 'מצחייה'], ['נעל', 'שרוכים'], ['ספר', 'כריכה'],
+    ['מזלג', 'שיניים'], ['בקבוק', 'פקק'], ['שלט', 'ספה'], ['מנעול', 'לוקר'],
+    ['טבעת', 'הצעת נישואין'], ['בלון', 'הליום'], ['סולם', 'נחשים'], ['מגבת', 'בריכה'],
+    ['מברשת שיניים', 'משחה'], ['סבון', 'בועות'], ['ארנק', 'כיס אחורי'], ['מנורה', 'ג\'יני'],
+    ['מחבת', 'רפונזל'], ['אוזניות', 'בלוטות\''], ['מסטיק', 'מתחת לשולחן'], ['מטבע', 'עץ או פלי'],
+    ['מחק', 'עיפרון'], ['תיק', 'גב'], ['מגהץ', 'קמטים'], ['מטען', 'אחוזים'],
+    ['שמיכה', 'פוך'], ['כספת', 'קוד']
+  ]}
+];
+
+// המרה למבנה { word, hint }
+const CATEGORIES = CATEGORY_DATA.map(c => ({
+  id: c.id, name: c.name, emoji: c.emoji,
+  words: c.words.map(([word, hint]) => ({ word, hint }))
+}));
+
+const MIN_PLAYERS = 3;
+const MAX_PLAYERS = 10;
+const STORAGE_KEY = 'imposter-settings-v1';
+
+/* =========================================================
+   State
+   ========================================================= */
+const state = {
+  players: ['', '', '', ''],      // שמות השחקנים
+  categories: CATEGORIES.map(c => c.id), // קטגוריות שנבחרו
+  hintOn: true,                   // רמז לאימפוסטר
+  recentWords: [],                // מילים אחרונות, כדי לא לחזור עליהן
+  game: null                      // נתוני הסיבוב הנוכחי
+};
+
+/* ===== כלי עזר ===== */
+const $ = id => document.getElementById(id);
+
+// מניעת הזרקת HTML בטקסט שהמשתמש הזין
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// מספר אקראי בטוח בטווח [0, max)
+function randInt(max) {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] % max;
+}
+
+/* ===== שמירה וטעינה של הגדרות ===== */
+function saveSettings() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      players: state.players, categories: state.categories,
+      hintOn: state.hintOn,
+      recentWords: state.recentWords
+    }));
+  } catch (e) { /* אחסון לא זמין - ממשיכים בלי */ }
+}
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (!saved) return;
+    if (Array.isArray(saved.players) && saved.players.length >= MIN_PLAYERS && saved.players.length <= MAX_PLAYERS) {
+      state.players = saved.players.map(String);
+    }
+    if (Array.isArray(saved.categories)) {
+      // רק קטגוריות שעדיין קיימות
+      state.categories = saved.categories.filter(id => CATEGORIES.some(c => c.id === id));
+    }
+    if (typeof saved.hintOn === 'boolean') state.hintOn = saved.hintOn;
+    if (Array.isArray(saved.recentWords)) state.recentWords = saved.recentWords;
+  } catch (e) { /* התעלמות מנתונים פגומים */ }
+}
+
+/* ===== מצב כהה/בהיר ===== */
+function currentTheme() {
+  const forced = document.documentElement.dataset.theme;
+  if (forced) return forced;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyTheme(theme) {
+  if (theme) document.documentElement.dataset.theme = theme;
+  $('theme-btn').textContent = currentTheme() === 'dark' ? '☀️' : '🌙';
+}
+
+function toggleTheme() {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem('imposter-theme', next); } catch (e) {}
+  applyTheme(next);
+}
+
+/* ===== ניווט בין מסכים ===== */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* =========================================================
+   מסך הגדרות
+   ========================================================= */
+function renderPlayers() {
+  const list = $('players-list');
+  list.innerHTML = state.players.map((name, i) => `
+    <div class="player-row">
+      <span class="player-num">${i + 1}</span>
+      <input class="text-input" type="text" maxlength="20" data-index="${i}"
+        value="${escapeHtml(name)}" placeholder="שחקן ${i + 1}" autocomplete="off">
+    </div>`).join('');
+  $('player-count').textContent = state.players.length;
+  $('minus-btn').disabled = state.players.length <= MIN_PLAYERS;
+  $('plus-btn').disabled = state.players.length >= MAX_PLAYERS;
+}
+
+function changePlayerCount(delta) {
+  const n = state.players.length + delta;
+  if (n < MIN_PLAYERS || n > MAX_PLAYERS) return;
+  if (delta > 0) state.players.push(''); else state.players.pop();
+  renderPlayers();
+  saveSettings();
+  if (delta > 0) $('players-list').lastElementChild.querySelector('input').focus();
+}
+
+function renderCategories() {
+  $('chips').innerHTML = CATEGORIES.map(c => `
+    <button type="button" class="chip" data-id="${c.id}"
+      aria-pressed="${state.categories.includes(c.id)}">${c.emoji} ${escapeHtml(c.name)}</button>`).join('');
+  const allSelected = CATEGORIES.every(c => state.categories.includes(c.id));
+  $('select-all-btn').textContent = allSelected ? 'נקה הכל' : 'בחר הכל';
+}
+
+function toggleCategory(id) {
+  const i = state.categories.indexOf(id);
+  if (i >= 0) state.categories.splice(i, 1); else state.categories.push(id);
+  renderCategories();
+  saveSettings();
+}
+
+// "בחר הכל" בוחר את כל הקטגוריות; לחיצה נוספת מנקה
+function toggleSelectAll() {
+  const allSelected = CATEGORIES.every(c => state.categories.includes(c.id));
+  state.categories = allSelected ? [] : CATEGORIES.map(c => c.id);
+  renderCategories();
+  saveSettings();
+}
+
+function showError(msg) {
+  const box = $('error-box');
+  box.textContent = msg;
+  box.classList.remove('show');
+  void box.offsetWidth; // הפעלה מחדש של האנימציה
+  box.classList.add('show');
+  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function clearError() {
+  $('error-box').classList.remove('show');
+  document.querySelectorAll('.text-input.invalid').forEach(el => el.classList.remove('invalid'));
+}
+
+// שמות סופיים: שם ריק הופך ל"שחקן 1", "שחקן 2" וכו'
+function resolveNames() {
+  return state.players.map((n, i) => n.trim() || `שחקן ${i + 1}`);
+}
+
+// בדיקת תקינות ההגדרות; מחזירה הודעת שגיאה או null
+function validateSetup() {
+  const names = resolveNames();
+  const inputs = document.querySelectorAll('#players-list input');
+
+  const seen = new Map();
+  for (let i = 0; i < names.length; i++) {
+    const key = names[i].toLowerCase();
+    if (seen.has(key)) {
+      inputs[i].classList.add('invalid');
+      inputs[seen.get(key)].classList.add('invalid');
+      return `השם "${names[i]}" מופיע פעמיים. לכל שחקן צריך שם שונה`;
+    }
+    seen.set(key, i);
+  }
+  if (state.categories.length === 0) return 'יש לבחור לפחות קטגוריה אחת';
+  return null;
+}
+
+/* =========================================================
+   לוגיקת המשחק
+   ========================================================= */
+// בניית מאגר המילים מכל הקטגוריות שנבחרו
+function buildPool() {
+  const pool = [];
+  CATEGORIES.forEach(c => {
+    if (state.categories.includes(c.id)) {
+      c.words.forEach(w => pool.push({ word: w.word, hint: w.hint, category: c.name }));
+    }
+  });
+  return pool;
+}
+
+// בחירת מילה אקראית, תוך הימנעות ממילים שהופיעו לאחרונה
+function pickWord() {
+  const pool = buildPool();
+  const fresh = pool.filter(p => !state.recentWords.includes(p.word));
+  const source = fresh.length ? fresh : pool;
+  const choice = source[randInt(source.length)];
+  state.recentWords.push(choice.word);
+  const limit = Math.min(60, Math.floor(pool.length / 2));
+  while (state.recentWords.length > limit) state.recentWords.shift();
+  return choice;
+}
+
+function startGame() {
+  clearError();
+  const err = validateSetup();
+  if (err) { showError(err); return; }
+
+  const names = resolveNames();
+  const pick = pickWord();
+  state.game = {
+    names,
+    word: pick.word,
+    hint: pick.hint,
+    category: pick.category,
+    imposterIndex: randInt(names.length),
+    starterIndex: randInt(names.length),
+    turn: 0
+  };
+  saveSettings();
+  showPass();
+}
+
+// מסך "העבר את המכשיר" - בלי שום מידע על תפקיד
+function showPass() {
+  const g = state.game;
+  const name = g.names[g.turn];
+  resetCard(); // וידוא שאין תפקיד קודם ב-DOM
+  $('pass-progress').textContent = `שחקן ${g.turn + 1} מתוך ${g.names.length}`;
+  $('pass-name').textContent = name;
+  $('reveal-btn').textContent = `אני ${name}, הצג לי את הקלף`;
+  showScreen('pass');
+}
+
+// איפוס הקלף: פונה כלפי מטה וריק מתוכן, בלי אנימציה
+function resetCard() {
+  const card = $('flip-card');
+  clearTimeout(flipTimer);
+  card.classList.add('no-anim');
+  card.classList.remove('flipped');
+  $('role-content').innerHTML = '';
+  $('role-content').classList.remove('imposter');
+  $('hide-btn').style.visibility = 'hidden';
+  $('flip-tip').textContent = TIP_HOLD;
+  void card.offsetWidth; // החלת השינוי לפני החזרת האנימציה
+  card.classList.remove('no-anim');
+}
+
+// מעבר למסך הקלף (הקלף עדיין הפוך ואין עליו מידע)
+function revealRole() {
+  const g = state.game;
+  resetCard();
+  const last = g.turn === g.names.length - 1;
+  $('hide-btn').textContent = last ? 'הסתר והתחל לשחק' : 'הסתר והעבר הלאה';
+  showScreen('role');
+}
+
+// תוכן הקלף של השחקן הנוכחי (נבנה רק ברגע ההיפוך)
+function buildRoleHtml() {
+  const g = state.game;
+  const name = escapeHtml(g.names[g.turn]);
+  if (g.turn === g.imposterIndex) {
+    return `
+      <p class="role-sub">${name}, אתה</p>
+      <p class="role-word">האימפוסטר 🤫</p>
+      <p class="role-sub">אל תיחשף! נסה להבין מה המילה</p>
+      ${state.hintOn ? `<div class="hint-pill"><small>הרמז שלך</small>${escapeHtml(g.hint)}</div>` : ''}`;
+  }
+  return `
+    <p class="role-sub">${name}, המילה הסודית היא</p>
+    <p class="role-word">${escapeHtml(g.word)}</p>`;
+}
+
+let flipTimer = null;
+const TIP_HOLD = 'החזיקו את האצבע על הקלף כדי לראות';
+
+// לחיצה ארוכה: הקלף נפתח כל עוד מחזיקים
+function showCard() {
+  const card = $('flip-card');
+  const back = $('role-content');
+  clearTimeout(flipTimer);
+  if (card.classList.contains('flipped')) return;
+  back.innerHTML = buildRoleHtml();
+  back.classList.toggle('imposter', state.game.turn === state.game.imposterIndex);
+  void card.offsetWidth; // החלת התוכן לפני תחילת האנימציה
+  card.classList.add('flipped');
+  $('hide-btn').style.visibility = 'visible';
+}
+
+// עזיבת האצבע: הקלף חוזר להיות הפוך והתוכן נמחק
+function hideCard() {
+  const card = $('flip-card');
+  if (!card.classList.contains('flipped')) return;
+  card.classList.remove('flipped');
+  $('flip-tip').textContent = TIP_HOLD;
+  clearTimeout(flipTimer);
+  flipTimer = setTimeout(() => { $('role-content').innerHTML = ''; }, 650); // אחרי שהקלף נסגר
+}
+
+// הסתרת התפקיד ומעבר לשחקן הבא
+function hideAndNext() {
+  resetCard(); // מחיקה מיידית של התפקיד מהמסך
+  const g = state.game;
+  g.turn++;
+  if (g.turn < g.names.length) showPass();
+  else showPlaying();
+}
+
+function showPlaying() {
+  resetEndButton();
+  $('starter-name').textContent = `${state.game.names[state.game.starterIndex]} מתחיל!`;
+  showScreen('playing');
+}
+
+// "סיים משחק": לחיצה ראשונה מבקשת אישור, שנייה חושפת
+let endTimer = null;
+function resetEndButton() {
+  clearTimeout(endTimer);
+  const btn = $('end-btn');
+  btn.textContent = 'סיים משחק';
+  delete btn.dataset.armed;
+}
+
+function endGame() {
+  const btn = $('end-btn');
+  if (!btn.dataset.armed) {
+    btn.dataset.armed = '1';
+    btn.textContent = 'בטוח? לחצו שוב כדי לחשוף';
+    endTimer = setTimeout(resetEndButton, 3000);
+    return;
+  }
+  resetEndButton();
+  const g = state.game;
+  $('imposter-name').textContent = g.names[g.imposterIndex];
+  $('end-word').textContent = g.word;
+  $('end-hint').textContent = g.hint;
+  $('end-hint-row').style.display = state.hintOn ? '' : 'none';
+  showScreen('end');
+}
+
+function backToSettings() {
+  state.game = null;
+  renderPlayers();
+  renderCategories();
+  showScreen('setup');
+}
+
+/* =========================================================
+   אתחול וחיבור אירועים
+   ========================================================= */
+function init() {
+  loadSettings();
+  let savedTheme = null;
+  try { savedTheme = localStorage.getItem('imposter-theme'); } catch (e) {}
+  applyTheme(savedTheme);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
+
+  $('hint-toggle').checked = state.hintOn;
+  renderPlayers();
+  renderCategories();
+
+  $('theme-btn').addEventListener('click', toggleTheme);
+  $('minus-btn').addEventListener('click', () => changePlayerCount(-1));
+  $('plus-btn').addEventListener('click', () => changePlayerCount(1));
+
+  $('players-list').addEventListener('input', e => {
+    const i = Number(e.target.dataset.index);
+    if (Number.isInteger(i)) {
+      state.players[i] = e.target.value;
+      e.target.classList.remove('invalid');
+      saveSettings();
+    }
+  });
+
+  $('chips').addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (chip) toggleCategory(chip.dataset.id);
+  });
+  $('select-all-btn').addEventListener('click', toggleSelectAll);
+
+  $('hint-toggle').addEventListener('change', e => { state.hintOn = e.target.checked; saveSettings(); });
+  $('start-btn').addEventListener('click', startGame);
+  $('reveal-btn').addEventListener('click', revealRole);
+  // לחיצה ארוכה על הקלף (אצבע או עכבר)
+  const card = $('flip-card');
+  card.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    try { card.setPointerCapture(e.pointerId); } catch (err) {}
+    showCard();
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => card.addEventListener(ev, hideCard));
+  card.addEventListener('contextmenu', e => e.preventDefault()); // בלי תפריט של לחיצה ארוכה
+  // מקלדת: מחזיקים רווח או Enter
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showCard(); }
+  });
+  card.addEventListener('keyup', e => {
+    if (e.key === 'Enter' || e.key === ' ') hideCard();
+  });
+  card.addEventListener('blur', hideCard);
+  $('hide-btn').addEventListener('click', hideAndNext);
+  $('end-btn').addEventListener('click', endGame);
+  $('new-game-btn').addEventListener('click', startGame);
+  $('settings-btn').addEventListener('click', backToSettings);
+}
+
+init();
+</script>
+</body>
+</html>
