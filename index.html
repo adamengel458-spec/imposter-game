@@ -314,6 +314,9 @@
     color: var(--blue); word-break: break-word; letter-spacing: 0;
   }
   .flip-back.imposter .role-word { color: var(--red); }
+  .flip-back.accomplice .role-word { color: var(--indigo); }
+  .flip-back.accomplice .hint-pill { margin-top: 10px; }
+  .flip-back.accomplice .role-sub + .hint-pill { margin-top: 6px; }
   .hint-pill {
     display: inline-block; margin-top: 18px;
     background: var(--fill); color: var(--label);
@@ -383,8 +386,15 @@
             <span class="slider"></span>
           </label>
         </div>
+        <div class="row">
+          <span class="row-title">שותף לאימפוסטר</span>
+          <label class="switch">
+            <input type="checkbox" id="accomplice-toggle">
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
-      <div class="section-foot">האימפוסטר יקבל רמז עקיף שיעזור לו להשתלב.</div>
+      <div class="section-foot">האימפוסטר יקבל רמז עקיף שיעזור לו להשתלב. שותף הוא שחקן נוסף שיודע את המילה ומי האימפוסטר, ועוזר לו לא להיחשד (האימפוסטר לא יודע מי השותף). דורש לפחות 4 שחקנים.</div>
     </div>
 
     <div class="error-box" id="error-box" role="alert"></div>
@@ -441,6 +451,7 @@
       <p class="headline" id="imposter-name"></p>
       <div class="reveal-list">
         <div class="reveal-item"><span>המילה הסודית</span><strong id="end-word"></strong></div>
+        <div class="reveal-item" id="end-accomplice-row"><span>השותף</span><strong id="end-accomplice"></strong></div>
         <div class="reveal-item" id="end-hint-row"><span>הרמז של האימפוסטר</span><strong id="end-hint"></strong></div>
       </div>
     </div>
@@ -562,6 +573,7 @@ const CATEGORIES = CATEGORY_DATA.map(c => ({
 
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 10;
+const MIN_ACCOMPLICE_PLAYERS = 4; // אימפוסטר + שותף + לפחות שני שחקנים רגילים
 const STORAGE_KEY = 'imposter-settings-v1';
 
 /* =========================================================
@@ -571,6 +583,7 @@ const state = {
   players: ['', '', '', ''],      // שמות השחקנים
   categories: CATEGORIES.map(c => c.id), // קטגוריות שנבחרו
   hintOn: true,                   // רמז לאימפוסטר
+  accompliceOn: false,            // שותף לאימפוסטר (כבוי כברירת מחדל)
   recentWords: [],                // מילים אחרונות, כדי לא לחזור עליהן
   game: null                      // נתוני הסיבוב הנוכחי
 };
@@ -597,7 +610,7 @@ function saveSettings() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       players: state.players, categories: state.categories,
-      hintOn: state.hintOn,
+      hintOn: state.hintOn, accompliceOn: state.accompliceOn,
       recentWords: state.recentWords
     }));
   } catch (e) { /* אחסון לא זמין - ממשיכים בלי */ }
@@ -615,6 +628,7 @@ function loadSettings() {
       state.categories = saved.categories.filter(id => CATEGORIES.some(c => c.id === id));
     }
     if (typeof saved.hintOn === 'boolean') state.hintOn = saved.hintOn;
+    if (typeof saved.accompliceOn === 'boolean') state.accompliceOn = saved.accompliceOn;
     if (Array.isArray(saved.recentWords)) state.recentWords = saved.recentWords;
   } catch (e) { /* התעלמות מנתונים פגומים */ }
 }
@@ -727,6 +741,9 @@ function validateSetup() {
     seen.set(key, i);
   }
   if (state.categories.length === 0) return 'יש לבחור לפחות קטגוריה אחת';
+  if (state.accompliceOn && names.length < MIN_ACCOMPLICE_PLAYERS) {
+    return `שותף לאימפוסטר דורש לפחות ${MIN_ACCOMPLICE_PLAYERS} שחקנים. הוסיפו שחקן או כבו את האפשרות`;
+  }
   return null;
 }
 
@@ -763,12 +780,20 @@ function startGame() {
 
   const names = resolveNames();
   const pick = pickWord();
+  const imposterIndex = randInt(names.length);
+  // שותף: שחקן אקראי שאינו האימפוסטר (או -1 אם האפשרות כבויה)
+  let accompliceIndex = -1;
+  if (state.accompliceOn) {
+    accompliceIndex = randInt(names.length - 1);
+    if (accompliceIndex >= imposterIndex) accompliceIndex++;
+  }
   state.game = {
     names,
     word: pick.word,
     hint: pick.hint,
     category: pick.category,
-    imposterIndex: randInt(names.length),
+    imposterIndex,
+    accompliceIndex,
     starterIndex: randInt(names.length),
     turn: 0
   };
@@ -794,7 +819,7 @@ function resetCard() {
   card.classList.add('no-anim');
   card.classList.remove('flipped');
   $('role-content').innerHTML = '';
-  $('role-content').classList.remove('imposter');
+  $('role-content').classList.remove('imposter', 'accomplice');
   $('hide-btn').style.visibility = 'hidden';
   $('flip-tip').textContent = TIP_HOLD;
   void card.offsetWidth; // החלת השינוי לפני החזרת האנימציה
@@ -821,6 +846,16 @@ function buildRoleHtml() {
       <p class="role-sub">אל תיחשף! נסה להבין מה המילה</p>
       ${state.hintOn ? `<div class="hint-pill"><small>הרמז שלך</small>${escapeHtml(g.hint)}</div>` : ''}`;
   }
+  if (g.turn === g.accompliceIndex) {
+    return `
+      <p class="role-sub">${name}, אתה</p>
+      <p class="role-word">השותף 🤝</p>
+      <p class="role-sub">האימפוסטר הוא</p>
+      <div class="hint-pill">${escapeHtml(g.names[g.imposterIndex])}</div>
+      <p class="role-sub" style="margin-top:12px">והמילה הסודית היא</p>
+      <div class="hint-pill">${escapeHtml(g.word)}</div>
+      <p class="role-sub" style="margin-top:12px">עזור לו לא להיחשד, אבל אל תהיה מובן מדי</p>`;
+  }
   return `
     <p class="role-sub">${name}, המילה הסודית היא</p>
     <p class="role-word">${escapeHtml(g.word)}</p>`;
@@ -837,6 +872,7 @@ function showCard() {
   if (card.classList.contains('flipped')) return;
   back.innerHTML = buildRoleHtml();
   back.classList.toggle('imposter', state.game.turn === state.game.imposterIndex);
+  back.classList.toggle('accomplice', state.game.turn === state.game.accompliceIndex);
   void card.offsetWidth; // החלת התוכן לפני תחילת האנימציה
   card.classList.add('flipped');
   $('hide-btn').style.visibility = 'visible';
@@ -890,6 +926,9 @@ function endGame() {
   $('end-word').textContent = g.word;
   $('end-hint').textContent = g.hint;
   $('end-hint-row').style.display = state.hintOn ? '' : 'none';
+  const hasAccomplice = g.accompliceIndex >= 0;
+  $('end-accomplice-row').style.display = hasAccomplice ? '' : 'none';
+  if (hasAccomplice) $('end-accomplice').textContent = g.names[g.accompliceIndex];
   showScreen('end');
 }
 
@@ -911,6 +950,7 @@ function init() {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
 
   $('hint-toggle').checked = state.hintOn;
+  $('accomplice-toggle').checked = state.accompliceOn;
   renderPlayers();
   renderCategories();
 
@@ -934,6 +974,7 @@ function init() {
   $('select-all-btn').addEventListener('click', toggleSelectAll);
 
   $('hint-toggle').addEventListener('change', e => { state.hintOn = e.target.checked; saveSettings(); });
+  $('accomplice-toggle').addEventListener('change', e => { state.accompliceOn = e.target.checked; saveSettings(); });
   $('start-btn').addEventListener('click', startGame);
   $('reveal-btn').addEventListener('click', revealRole);
   // לחיצה ארוכה על הקלף (אצבע או עכבר)
