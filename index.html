@@ -84,6 +84,7 @@
     font-weight: 400;
     line-height: 1.35;
     letter-spacing: -0.2px;
+    min-height: 100vh;
     min-height: 100dvh;
     touch-action: manipulation;
     -webkit-font-smoothing: antialiased;
@@ -96,6 +97,7 @@
     max-width: 520px;
     margin: 0 auto;
     padding: calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 20px);
+    min-height: 100vh;
     min-height: 100dvh;
     display: flex;
     flex-direction: column;
@@ -222,7 +224,7 @@
   .switch { position: relative; flex: none; width: 51px; height: 31px; }
   .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
   .switch .slider {
-    position: absolute; inset: 0; border-radius: 999px;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; border-radius: 999px;
     background: var(--fill-2); transition: background .25s;
   }
   .switch .slider::before {
@@ -290,7 +292,7 @@
   .flip.flipped .flip-inner { transform: rotateY(180deg); }
   .flip.no-anim .flip-inner { transition: none; }
   .flip-face {
-    position: absolute; inset: 0;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0;
     border-radius: 22px;
     -webkit-backface-visibility: hidden; backface-visibility: hidden;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -304,7 +306,7 @@
     font-size: 96px; font-weight: 700;
   }
   .flip-front::after {
-    content: ""; position: absolute; inset: 12px;
+    content: ""; position: absolute; top: 12px; right: 12px; bottom: 12px; left: 12px;
     border: 1.5px solid rgba(255, 255, 255, .25); border-radius: 14px;
   }
   .flip-back { transform: rotateY(180deg); background: var(--card); }
@@ -947,7 +949,10 @@ function init() {
   let savedTheme = null;
   try { savedTheme = localStorage.getItem('imposter-theme'); } catch (e) {}
   applyTheme(savedTheme);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme());
+  // שינוי מצב כהה/בהיר של המכשיר (בגרסאות iOS ישנות אין addEventListener על matchMedia)
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  if (darkQuery.addEventListener) darkQuery.addEventListener('change', () => applyTheme());
+  else if (darkQuery.addListener) darkQuery.addListener(() => applyTheme());
 
   $('hint-toggle').checked = state.hintOn;
   $('accomplice-toggle').checked = state.accompliceOn;
